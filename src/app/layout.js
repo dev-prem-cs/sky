@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 // 1. Import the component
 import BottomNav from "./_components/Bottomnav";
+import { Providers } from "./_components/Provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +26,12 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased pb-16`} 
         
       >
+
+        
+        <Providers>
         {children}
+
+        </Providers>
         
         {/* 2. Add the Navigation here */}
         <BottomNav />
