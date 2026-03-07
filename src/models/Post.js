@@ -11,16 +11,32 @@ const postSchema = new Schema(
       type: String,
       required: true,
     },
-    // 🆕 The missing piece: Storing the image URL!
     image_url: {
       type: String,
-      default: "", // Optional: Leave empty if it's a text-only post
+      default: "", 
+    },
+    image_url: {
+      type: String,
+      default: "", 
+    },
+    // 🆕 NEW: We need this to tell ImageKit exactly which file to delete!
+    image_file_id: {
+      type: String,
+      default: "",
     },
     author: {
       type: Schema.Types.ObjectId,
       ref: "User", 
       required: true,
     },
+    
+    // 🆕 NEW: Keeping track of public vs private posts!
+    visibility: {
+      type: String,
+      enum: ["public", "private"], // Strictly limits values to these two options
+      default: "public",           // Makes posts public by default
+    },
+
     meta_tags: [
       {
         type: String,

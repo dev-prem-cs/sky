@@ -15,8 +15,9 @@ export async function POST(req) {
     }
 
     // 2. Extract data from the frontend request
-    const { title, desc, image_url, meta_tags } = await req.json();
-
+    // 🆕 We added `visibility` to the extracted variables!
+    // const { title, desc, image_url, meta_tags, visibility } = await req.json();
+    const { title, desc, image_url, image_file_id, meta_tags, visibility } = await req.json();
     if (!title || !desc) {
       return NextResponse.json({ message: "Title and description are required." }, { status: 400 });
     }
@@ -29,14 +30,17 @@ export async function POST(req) {
       title,
       desc,
       image_url: image_url || "", // Optional
+      image_file_id: image_file_id || "",
       author: session.user.id,    // 🎯 Here is where the magic happens!
       meta_tags: meta_tags ? meta_tags.split(",").map(tag => tag.trim().toLowerCase()) : [], // Turns "NextJS, React" into ["nextjs", "react"]
+      // 🆕 Save the visibility choice to the database (falling back to "public" just in case)
+      visibility: visibility || "public", 
     });
 
     // 5. Bonus: Update the User's 'posts' array so they keep a record of what they wrote!
-    await User.findByIdAndUpdate(session.user.id, {
-      $push: { posts: newPost._id }
-    });
+    // await User.findByIdAndUpdate(session.user.id, {
+    //   $push: { posts: newPost._id }
+    // });
 
     return NextResponse.json({ message: "Post created successfully!", post: newPost }, { status: 201 });
 
