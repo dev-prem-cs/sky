@@ -30,7 +30,7 @@ export default function RegisterForm() {
       const data = await res.json();
 
       if (res.ok) {
-        router.push("/api/auth/signin"); 
+        router.push("/login");
       } else {
         setError(data.message);
       }
@@ -128,7 +128,7 @@ export default function RegisterForm() {
       </button>
 
       <p style={{ textAlign: "center", marginTop: "20px", fontSize: "14px" }}>
-        Already have an account? <Link href="/api/auth/signin" style={{ color: "#0070f3" }}>Login here</Link>
+        Already have an account? <Link href="/login" style={{ color: "#0070f3" }}>Login here</Link>
       </p>
     </div>
   );

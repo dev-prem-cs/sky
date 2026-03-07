@@ -1,4 +1,5 @@
 "use client";
+import { useSession,  signOut } from "next-auth/react";
 
 import { useState } from "react";
 import { 
@@ -11,10 +12,11 @@ import {
   Plus 
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("public");
-
+  const { data: session, status } = useSession();
   const tabs = [
     { id: "public", label: "Public", icon: Globe },
     { id: "private", label: "Private", icon: Lock },
@@ -45,10 +47,9 @@ export default function ProfilePage() {
               </div>
               <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-4 border-white"></div>
             </div>
-            
             {/* User Info */}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Alexandra Chen</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{session?.user?.name}</h1>
               <p className="text-gray-500 max-w-md mt-1">
                 Creative designer & photographer. Capturing moments that matter ✨
               </p>
@@ -62,6 +63,9 @@ export default function ProfilePage() {
             </button>
             <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
               <Settings className="w-5 h-5" />
+            </button>
+            <button onClick={() => signOut()} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+              Log out
             </button>
           </div>
         </div>
@@ -103,9 +107,10 @@ export default function ProfilePage() {
       </div>
       
       {/* --- Floating Action Button (FAB) --- */}
-      <button className="fixed right-6 bottom-24 z-20 p-4 bg-purple-600 rounded-2xl shadow-lg hover:bg-purple-700 transition-colors">
+      
+      <Link href="/create-post" className="fixed right-6 bottom-24 z-20 p-4 bg-purple-600 rounded-2xl shadow-lg hover:bg-purple-700 transition-colors">
         <Plus className="w-7 h-7 text-white" />
-      </button>
+      </Link>
     </div>
   );
 }

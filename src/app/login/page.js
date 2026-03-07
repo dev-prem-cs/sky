@@ -1,68 +1,51 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Lock, User, ArrowRight, Github } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleCredentialsLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+      callbackUrl: "/",
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError("Invalid email or password.");
+      return;
+    }
+
+    router.push(result?.url || "/");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      
       <div className="bg-white w-full max-w-md rounded-3xl shadow-xl overflow-hidden">
-        
-        {/* --- Header & Toggle --- */}
         <div className="px-8 pt-8 pb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {isLogin ? "Welcome back" : "Create account"}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
           <p className="text-gray-500 mb-6">
-            {isLogin 
-              ? "Enter your details to access your account." 
-              : "Sign up to start sharing your moments."}
+            Enter your details to access your account.
           </p>
-
-          {/* Toggle Switch */}
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
-            <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                isLogin ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Log In
-            </button>
-            <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                !isLogin ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
         </div>
 
-        {/* --- Form Section --- */}
-        <form className="px-8 pb-8 space-y-4" onSubmit={(e) => e.preventDefault()}>
-          
-          {/* Name Field (Sign Up Only) */}
-          {!isLogin && (
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Email Field */}
+        <form className="px-8 pb-8 space-y-4" onSubmit={handleCredentialsLogin}>
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Email Address</label>
             <div className="relative">
@@ -70,43 +53,41 @@ export default function LoginPage() {
               <input
                 type="email"
                 placeholder="hello@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               />
             </div>
           </div>
 
-          {/* Password Field */}
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="password"
-                placeholder="••••••••"
+                placeholder="********"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               />
             </div>
           </div>
 
-          {/* Forgot Password (Login Only) */}
-          {isLogin && (
-            <div className="flex justify-end">
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                Forgot password?
-              </a>
-            </div>
-          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
-          {/* Submit Button */}
-          <Link href="/" className="block"> {/* Using Link to simulate successful login redirect */}
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 mt-2">
-              {isLogin ? "Log In" : "Create Account"}
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          </Link>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 mt-2"
+          >
+            {loading ? "Logging in..." : "Log In"}
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </form>
 
-        {/* --- Divider --- */}
         <div className="relative px-8 py-4">
           <div className="absolute inset-0 flex items-center" aria-hidden="true">
             <div className="w-full border-t border-gray-200 mx-8"></div>
@@ -116,9 +97,11 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* --- Social Buttons --- */}
-        <div className="px-8 pb-8 grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+        <div className="px-8 pb-8 space-y-3">
+          <button
+            onClick={() => signIn("google", { callbackUrl: "/" })}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -137,15 +120,16 @@ export default function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-700">Google</span>
+            <span className="text-sm font-medium text-gray-700">Continue with Google</span>
           </button>
-          
-          <button className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-            <Github className="w-5 h-5 text-gray-900" />
-            <span className="text-sm font-medium text-gray-700">GitHub</span>
-          </button>
-        </div>
 
+          <p className="text-center text-sm text-gray-600">
+            New here?{" "}
+            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+              Create account
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

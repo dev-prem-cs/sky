@@ -1,40 +1,59 @@
 "use client";
 
-// You can fetch this from an API or leave it hardcoded
-const categories = [
-  "All",
-  "APIs",
-  "Music",
-  "Data Structures",
-  "CSS",
-  "Google",
-  "Mixes",
-  "Podcasts",
-  "Gaming",
-  "Eren Yeager",
-];
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-export default function CategoryPills() {
+export default function CategoryPills({ tags = [] }) {
+  const router = useRouter();
+  const pathname = usePathname(); // 🆕 Gets the exact current page path (e.g., "/home")
+  const searchParams = useSearchParams(); 
+  
+  const currentTag = searchParams.get("tag") || "All";
+
+  const handleTagClick = (tag) => {
+    // 1. Copy the current URL parameters safely
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // 2. Add or remove the tag
+    if (tag === "All") {
+      params.delete("tag"); 
+    } else {
+      params.set("tag", tag);
+    }
+
+    // 3. Push the new URL dynamically (e.g., "/home?tag=CSS")
+    // { scroll: false } prevents the screen from jarringly jumping to the top!
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   return (
-    // 'sticky top-0' keeps it visible while scrolling down the page
-    <div className="sticky top-0 z-10 w-full bg-white border-b border-gray-100">
-      
-      {/* Container for scrolling */}
-      <div className="flex overflow-x-auto whitespace-nowrap p-4 space-x-3 scrollbar-hide">
-        {categories.map((category, index) => (
-          <button
+    <div className="w-full bg-white border-b border-gray-200">
+      <div className="flex gap-3 overflow-x-auto p-4 max-w-7xl mx-auto scrollbar-hide">
+        
+        <button 
+          onClick={() => handleTagClick("All")}
+          className={`px-5 py-2 rounded-lg whitespace-nowrap text-sm font-semibold transition-all ${
+            currentTag === "All" 
+              ? "bg-black text-white shadow-md" 
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          All
+        </button>
+        
+        {tags.map((tag, index) => (
+          <button 
             key={index}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors 
-              ${
-                // Style the first item ('All') as active
-                index === 0
-                  ? "bg-black text-white"
-                  : "bg-gray-100 text-gray-900 hover:bg-gray-200"
-              }`}
+            onClick={() => handleTagClick(tag)}
+            className={`px-5 py-2 rounded-lg whitespace-nowrap text-sm font-semibold capitalize transition-all ${
+              currentTag === tag 
+                ? "bg-black text-white shadow-md" 
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
           >
-            {category}
+            {tag}
           </button>
         ))}
+
       </div>
     </div>
   );

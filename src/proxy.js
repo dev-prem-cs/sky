@@ -5,7 +5,9 @@ import { NextResponse } from "next/server";
 export async function proxy(req) {
   const path = req.nextUrl.pathname;
 
-  const isPublicPath = 
+  const isPublicPath =
+    path === "/" ||
+    path === "/login" ||
     path === "/register" || 
     path.startsWith("/api/auth") ||
     path.startsWith("/api/register");
@@ -13,11 +15,11 @@ export async function proxy(req) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   if (!isPublicPath && !token) {
-    return NextResponse.redirect(new URL("/api/auth/signin", req.nextUrl));
+    return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
-  if ((path === "/register" || path === "/api/auth/signin") && token) {
-    return NextResponse.redirect(new URL("/", req.nextUrl)); 
+  if ((path === "/" || path === "/login" || path === "/register") && token) {
+    return NextResponse.redirect(new URL("/home", req.nextUrl));
   }
 
   return NextResponse.next();

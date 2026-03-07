@@ -9,13 +9,16 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@imagekit/next": "^2.1.5",
     "bcryptjs": "^3.0.3",
+    "imagekit": "^6.0.0",
     "lucide-react": "^0.563.0",
     "mongoose": "^9.2.2",
     "next": "16.1.5",
     "next-auth": "^4.24.13",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-intersection-observer": "^10.0.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

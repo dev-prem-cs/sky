@@ -13,28 +13,31 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
+      // Note: Make sure to hash this with bcrypt before saving!
     },
-    // 🆕 New Fields Added Below:
     username: {
       type: String,
       required: true,
-      unique: true, // Usernames must be unique!
+      unique: true, 
+      trim: true, // Automatically removes accidental spaces at the beginning/end
     },
     profile_pic: {
-      type: String,
-      default: "", // Defaults to an empty string if they don't upload one
+      url: { 
+        type: String, 
+        default: "" 
+      },
+      fileId: { 
+        type: String, 
+        default: "" 
+      }, // 🔑 Required for deleting/updating images in ImageKit
     },
     bio: {
       type: String,
       default: "",
-      maxLength: 160, // Good practice to limit bio length!
+      maxLength: 160, 
     },
-    posts: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Post", // This tells Mongoose these IDs belong to the 'Post' model
-      }
-    ],
+    // 🚨 Removed the 'posts' array to prevent 16MB limit crashes. 
+    // We will handle the relationship in the Post model instead!
   },
   { timestamps: true }
 );
