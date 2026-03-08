@@ -2,9 +2,19 @@
 
 import mongoose from "mongoose";
 import Post from "@/models/Post";
+import ImageKit from "@imagekit/nodejs"; // 👈 Good job updating this!
 import User from "@/models/User";
 import { connectMongoDB } from "@/app/lib/mongodb";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../api/auth/[...nextauth]/route"; 
+import { revalidatePath } from "next/cache";
 
+// 🎯 NEW: Initialize ImageKit connection with your secure API keys!
+const imagekit = new ImageKit({
+  publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT,
+});
 
 // 🎯 The ONE and ONLY fetchPosts function!
 export async function fetchPosts(page = 1, limit = 5, tag = null) {
@@ -48,8 +58,6 @@ export async function fetchTags() {
   }
 }
 
-
-
 // 🎯 Function to handle search queries
 export async function searchPosts(searchTerm) {
   try {
@@ -80,10 +88,6 @@ export async function searchPosts(searchTerm) {
   }
 }
 
-
-
-
-
 // 🎯 Fetch posts created by a specific user
 export async function fetchUserPosts(userId) {
   try {
@@ -103,15 +107,7 @@ export async function fetchUserPosts(userId) {
   }
 }
 
-
-
-
-
 // 🎯 Securely delete a post
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../api/auth/[...nextauth]/route"; // Adjust this path to match your auth config!
-import { revalidatePath } from "next/cache";
-
 export async function deletePost(postId) {
   try {
     // 1. Authenticate the user securely on the server
@@ -139,7 +135,8 @@ export async function deletePost(postId) {
     // 🎯 NEW: Delete the image from ImageKit!
     if (post.image_file_id) {
       try {
-        await imagekit.deleteFile(post.image_file_id);
+        // 👈 Notice this is lowercase 'imagekit' now!
+        await imagekit.files.delete(post.image_file_id);
       } catch (ikError) {
         console.error("Failed to delete image from ImageKit:", ikError);
         // We log the error but don't stop the DB deletion, 
@@ -148,6 +145,7 @@ export async function deletePost(postId) {
     }
     // 4. Delete the post from the Post collection
     await Post.findByIdAndDelete(postId);
+
 
     // 5. Tell Next.js to refresh the UI immediately
     revalidatePath("/profile"); 
