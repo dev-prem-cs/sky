@@ -75,13 +75,14 @@ const LandingPage = async () => {
             
             {/* The Image Itself */}
            <Image 
-              src='/Capture.PNG'
+              src='/hero.JPG'
               alt="Sky-It Dashboard Mockup" 
               width={1200} // ⚠️ Replace with your image's actual width
               height={800} // ⚠️ Replace with your image's actual height
               priority // 🚀 Add this because the image is "above the fold" (visible immediately)
               className="w-full h-auto rounded-[20px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border-4 border-white/50 bg-white/50 backdrop-blur-sm"
             />
+          
           </div>
           
         </div>

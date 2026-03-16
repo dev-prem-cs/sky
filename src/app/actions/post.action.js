@@ -29,13 +29,15 @@ export async function fetchPosts(page = 1, limit = 5, tag = null) {
       query.meta_tags = tag; 
     }
 
-    const rawPosts = await Post.find(query)
+const rawPosts = await Post.find(query)
       .populate({ path: "author", select: "name username image" })
+      // 🆕 ADD THIS LINE SO COMMENTS HAVE USERNAMES:
+      .populate({ path: "comments.user", select: "name username image" }) 
       .sort({ createdAt: -1 })
       .skip(skipAmount)
       .limit(limit)
       .lean();
-
+      
     return JSON.parse(JSON.stringify(rawPosts));
   } catch (error) {
     console.error("Failed to fetch posts:", error);
@@ -155,5 +157,99 @@ export async function deletePost(postId) {
   } catch (error) {
     console.error("Error deleting post:", error);
     return { success: false, message: "Failed to delete post" };
+  }
+}
+
+
+// 🎯 Securely toggle a Like on a post
+export async function toggleLike(postId) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    await connectMongoDB();
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return { success: false, message: "Post not found" };
+    }
+
+    const userId = session.user.id;
+    
+    // Check if the user's ID is already in the likes array
+    const hasLiked = post.likes.includes(userId);
+
+    if (hasLiked) {
+      // If they already liked it, remove their ID (Unlike)
+      post.likes.pull(userId);
+    } else {
+      // If they haven't liked it, add their ID (Like)
+      post.likes.push(userId);
+    }
+
+    await post.save();
+
+    // Refresh the paths in the background to keep the server cache updated
+    revalidatePath("/");
+    revalidatePath("/profile");
+
+    return { success: true, isLiked: !hasLiked };
+  } catch (error) {
+    console.error("Error toggling like:", error);
+    return { success: false, message: "Failed to toggle like" };
+  }
+}
+
+
+
+
+// 🎯 Securely add a comment to a post
+export async function addComment(postId, text) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    if (!text || text.trim() === "") {
+      return { success: false, message: "Comment cannot be empty" };
+    }
+
+    await connectMongoDB();
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return { success: false, message: "Post not found" };
+    }
+
+    // 1. Create the new comment object
+    const newComment = {
+      user: session.user.id,
+      text: text,
+      createdAt: new Date(),
+    };
+
+    // 2. Push it to the post's comments array
+    post.comments.push(newComment);
+    await post.save();
+
+    // 3. Re-fetch the post to populate the user data of the new comment
+    // This allows us to instantly send back the commenter's name and picture!
+    const updatedPost = await Post.findById(postId)
+      .populate({ path: "comments.user", select: "name username image" })
+      .lean();
+
+    // 4. Get the exact comment we just added (the last one in the array)
+    const savedComment = updatedPost.comments[updatedPost.comments.length - 1];
+
+    revalidatePath("/");
+    revalidatePath("/profile");
+
+    return { success: true, comment: JSON.parse(JSON.stringify(savedComment)) };
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    return { success: false, message: "Failed to add comment" };
   }
 }
