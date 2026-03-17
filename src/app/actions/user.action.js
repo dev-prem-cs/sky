@@ -1,6 +1,8 @@
 import { connectMongoDB } from "../lib/mongodb";
 import User from "@/models/User";
 
+
+
 // 🎯 Fetch a public user profile and their public posts
 import Post from "@/models/Post"; // Make sure to import Post at the top if it isn't already!
 

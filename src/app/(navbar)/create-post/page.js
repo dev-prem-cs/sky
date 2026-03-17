@@ -1,5 +1,7 @@
 "use client";
 
+import toast from "react-hot-toast";
+
 import { generateTagsFromImage } from "@/app/actions/ai.action";
 import { Sparkles, Loader2 } from "lucide-react"; // Grab the sparkles icon!
 
@@ -28,8 +30,7 @@ const [isGeneratingTags, setIsGeneratingTags] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
   
-  // 🆕 NEW: State to control our success toast!
-  const [showToast, setShowToast] = useState(false);
+
 
   if (status === "loading") return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading...</p>;
 
@@ -94,42 +95,47 @@ const [isGeneratingTags, setIsGeneratingTags] = useState(false);
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    try {
-      const res = await fetch("/api/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          title, 
-          desc, 
-          image_url: imageUrl, 
-          image_file_id: imageId,
-          meta_tags: tags,
-          visibility 
-        }),
-      });
-
-      if (res.ok) {
-        // 🎯 1. Trigger the toast!
-        setShowToast(true);
-        
-        // 🎯 2. Wait for 1.5 seconds so they can see the success message, THEN redirect!
-        setTimeout(() => {
-          router.push("/");
-        }, 1500);
-        
-      } else {
+    // 🎯 1. Wrap the API call in a promise
+    const uploadPromise = fetch("/api/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        title, 
+        desc, 
+        image_url: imageUrl, 
+        image_file_id: imageId,
+        meta_tags: tags,
+        visibility 
+      }),
+    }).then(async (res) => {
+      if (!res.ok) {
         const data = await res.json();
-        setError(data.message);
-        setLoading(false); // Only reset loading if there is an error
+        throw new Error(data.message || "Failed to create post");
       }
+      return res.json();
+    });
+
+    // 🎯 2. Let react-hot-toast handle the UI automatically!
+    toast.promise(uploadPromise, {
+      loading: 'Publishing your post... 🚀',
+      success: 'Post published successfully! 🎉',
+      error: (err) => `Error: ${err.message}`,
+    });
+
+    try {
+      await uploadPromise;
+      // 🎯 3. Wait a brief moment, then redirect to home!
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
     } catch (err) {
-      setError("An error occurred while creating the post.");
-      setLoading(false);
+      setError(err.message);
+      setLoading(false); 
     } 
   };
 
@@ -171,28 +177,7 @@ const handleAutoTag = async () => {
   return (
     <div style={{ maxWidth: "600px", margin: "50px auto", padding: "20px", border: "1px solid #ddd", borderRadius: "8px", position: "relative" }}>
       
-      {/* 🆕 NEW: The Toast UI */}
-      {showToast && (
-        <div style={{
-          position: "absolute",
-          top: "-20px",
-          left: "50%",
-          transform: "translate(-50%, -100%)",
-          backgroundColor: "#10B981", // Beautiful Emerald Green
-          color: "white",
-          padding: "12px 24px",
-          borderRadius: "8px",
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-          fontWeight: "bold",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          animation: "slideDown 0.3s ease-out forwards",
-          zIndex: 50
-        }}>
-          ✅ Post uploaded successfully!
-        </div>
-      )}
+      
 
       <h2>Create a New Post ✍️</h2>
       <p style={{ color: "#666", marginBottom: "20px" }}>Posting as: <strong>{session?.user?.name || session?.user?.username}</strong></p>
@@ -351,30 +336,24 @@ const handleAutoTag = async () => {
 
         <button 
           type="submit" 
-          disabled={loading || uploadingImage || showToast} 
+          disabled={loading || uploadingImage} 
           style={{ 
             padding: "12px", 
-            backgroundColor: (loading || uploadingImage || showToast) ? "#ccc" : "#000", 
+            backgroundColor: (loading || uploadingImage) ? "#ccc" : "#000", 
             color: "#fff", 
             border: "none", 
             borderRadius: "4px",
-            cursor: (loading || uploadingImage || showToast) ? "not-allowed" : "pointer",
+            cursor: (loading || uploadingImage) ? "not-allowed" : "pointer",
             fontWeight: "bold",
             marginTop: "10px"
           }}
         >
-          {loading ? "Publishing..." : showToast ? "Redirecting..." : "Publish Post"}
+          {loading ? "Publishing..." : "Publish Post"}
         </button>
 
       </form>
       
-      {/* Optional: Add a quick keyframe for the slide-down animation right in the component */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes slideDown {
-          from { opacity: 0; transform: translate(-50%, -150%); }
-          to { opacity: 1; transform: translate(-50%, -100%); }
-        }
-      `}} />
+      
     </div>
   );
 }

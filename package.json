@@ -14,6 +14,7 @@
     "@imagekit/nodejs": "^7.3.0",
     "bcryptjs": "^3.0.3",
     "imagekit": "^6.0.0",
+    "isomorphic-dompurify": "^3.3.0",
     "lucide-react": "^0.563.0",
     "mongoose": "^9.2.2",
     "next": "16.1.5",

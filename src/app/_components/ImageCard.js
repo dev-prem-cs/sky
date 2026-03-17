@@ -7,6 +7,8 @@ import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Loader2, X, Send,
 import { deletePost, toggleLike, addComment } from "@/app/actions/post.action"; 
 import Link from "next/link"; // 🎯 NEW: Import Next.js Link!
 
+import toast from "react-hot-toast";
+
 export default function ImageCard({ post ,fullView = false}) {
   const { data: session } = useSession(); 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -38,7 +40,7 @@ export default function ImageCard({ post ,fullView = false}) {
 
   // --- Handlers ---
   const handleLike = async () => {
-    if (!session?.user) return alert("Please log in to like posts! ❤️");
+    if (!session?.user) return toast.error("Please log in to like posts! ❤️");
     setIsLiked(!isLiked);
     setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
     const result = await toggleLike(post._id);
@@ -61,7 +63,7 @@ export default function ImageCard({ post ,fullView = false}) {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!session?.user) return alert("Please log in to comment! 💬");
+    if (!session?.user) return toast.error("Please log in to comment! 💬");
     if (!commentText.trim()) return;
 
     setIsSubmitting(true);
@@ -70,8 +72,9 @@ export default function ImageCard({ post ,fullView = false}) {
     if (result.success) {
       setCommentsList((prev) => [...prev, result.comment]);
       setCommentText(""); 
+      toast.success("Comment added!");
     } else {
-      alert(result.message);
+      toast.error(result.message);
     }
     setIsSubmitting(false);
   };
@@ -90,6 +93,7 @@ export default function ImageCard({ post ,fullView = false}) {
       } else {
         await navigator.clipboard.writeText(shareUrl);
         setIsCopied(true);
+        toast.success("Link copied to clipboard! 🔗");
         setTimeout(() => setIsCopied(false), 2000);
       }
     } catch (error) {
@@ -104,9 +108,11 @@ export default function ImageCard({ post ,fullView = false}) {
 
     try {
       // 1. Fetch the image data directly
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
       
+      const response = await fetch(imageUrl);
+      toast.success("Download started! 📥");
+      const blob = await response.blob();
+
       // 2. Create a temporary local URL for the downloaded data
       const blobUrl = window.URL.createObjectURL(blob);
       
@@ -125,6 +131,7 @@ export default function ImageCard({ post ,fullView = false}) {
       // 4. Clean up the memory
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
+      toast.error("Error downloading image.");
       console.error("Error downloading image:", error);
       // Fallback: If their browser blocks the secret download, just open it normally
       window.open(imageUrl, "_blank");

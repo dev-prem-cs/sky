@@ -8,6 +8,8 @@ import { connectMongoDB } from "@/app/lib/mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../api/auth/[...nextauth]/route"; 
 import { revalidatePath } from "next/cache";
+import DOMPurify from "isomorphic-dompurify";
+
 
 // 🎯 NEW: Initialize ImageKit connection with your secure API keys!
 const imagekit = new ImageKit({
@@ -215,6 +217,9 @@ export async function addComment(postId, text) {
     if (!session?.user?.id) {
       return { success: false, message: "Unauthorized" };
     }
+    const cleanText = DOMPurify.sanitize(text.trim());
+    
+    if (!cleanText) return { success: false, message: "Comment cannot be empty" };
 
     if (!text || text.trim() === "") {
       return { success: false, message: "Comment cannot be empty" };
@@ -230,7 +235,7 @@ export async function addComment(postId, text) {
     // 1. Create the new comment object
     const newComment = {
       user: session.user.id,
-      text: text,
+      text: cleanText,
       createdAt: new Date(),
     };
 
@@ -268,9 +273,9 @@ export async function updateUserProfile(bio, imageUrl, imageId) {
     }
 
     await connectMongoDB();
-
+    const cleanBio = DOMPurify.sanitize(bio ? bio.trim() : "");
     // 1. Prepare the fields we want to update
-    const updateData = { bio };
+    const updateData = { cleanBio };
     
     // 2. If they uploaded a new image, add it to the update object
     if (imageUrl) {

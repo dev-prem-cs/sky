@@ -4,6 +4,8 @@ import { authOptions } from "../auth/[...nextauth]/route"; // Adjust path if nee
 import { connectMongoDB } from "@/app/lib/mongodb";
 import Post from "@/models/Post";
 import User from "@/models/User";
+import DOMPurify from "isomorphic-dompurify";
+
 
 export async function POST(req) {
   try {
@@ -22,13 +24,17 @@ export async function POST(req) {
       return NextResponse.json({ message: "Title and description are required." }, { status: 400 });
     }
 
+    // input sanitazition
+    const cleanTitle = DOMPurify.sanitize(title.trim());
+    const cleanDesc = DOMPurify.sanitize(desc.trim());
+
     // 3. Connect to DB
     await connectMongoDB();
 
     // 4. Create the Post! We use the session.user.id for the author
     const newPost = await Post.create({
-      title,
-      desc,
+      title:cleanTitle,
+      desc:cleanDesc,
       image_url: image_url || "", // Optional
       image_file_id: image_file_id || "",
       author: session.user.id,    // 🎯 Here is where the magic happens!
