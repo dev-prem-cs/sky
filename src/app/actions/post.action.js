@@ -46,11 +46,14 @@ const rawPosts = await Post.find(query)
 }
 
 // 🎯 The tags function we added earlier
+// 🎯 Fetch only tags from public posts
 export async function fetchTags() {
   try {
     await connectMongoDB();
 
-    const rawTags = await Post.distinct("meta_tags");
+    // 🎯 NEW: Add the visibility filter right here!
+    const rawTags = await Post.distinct("meta_tags", { visibility: "public" });
+    
     const validTags = rawTags.filter(tag => tag && tag.trim() !== "");
 
     return validTags;
@@ -251,5 +254,64 @@ export async function addComment(postId, text) {
   } catch (error) {
     console.error("Error adding comment:", error);
     return { success: false, message: "Failed to add comment" };
+  }
+}
+
+
+
+
+export async function updateUserProfile(bio, imageUrl, imageId) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    await connectMongoDB();
+
+    // 1. Prepare the fields we want to update
+    const updateData = { bio };
+    
+    // 2. If they uploaded a new image, add it to the update object
+    if (imageUrl) {
+      updateData.profile_pic = {
+        url: imageUrl,
+        fileId: imageId
+      };
+      // NextAuth uses the native 'image' field, so we update that too for sync!
+      updateData.image = imageUrl; 
+    }
+
+    // 3. Update the user in the database
+    await User.findByIdAndUpdate(session.user.id, updateData);
+
+    // 4. Refresh the profile page to show the new data instantly
+    revalidatePath("/profile");
+
+    return { success: true, message: "Profile updated successfully!" };
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return { success: false, message: "Failed to update profile" };
+  }
+}
+
+
+
+// 🎯 Fetch a single post by its ID
+export async function getPostById(postId) {
+  try {
+    await connectMongoDB();
+
+    const rawPost = await Post.findById(postId)
+      .populate({ path: "author", select: "name username image" })
+      .populate({ path: "comments.user", select: "name username image" }) // Grab commenter info too!
+      .lean();
+
+    if (!rawPost) return null;
+
+    return JSON.parse(JSON.stringify(rawPost));
+  } catch (error) {
+    console.error("Failed to fetch single post:", error);
+    return null;
   }
 }

@@ -32,7 +32,10 @@ export async function POST(req) {
       image_url: image_url || "", // Optional
       image_file_id: image_file_id || "",
       author: session.user.id,    // 🎯 Here is where the magic happens!
-      meta_tags: meta_tags ? meta_tags.split(",").map(tag => tag.trim().toLowerCase()) : [], // Turns "NextJS, React" into ["nextjs", "react"]
+      // 🎯 Checks if it is already an array from our new UI!
+        meta_tags: Array.isArray(meta_tags) 
+          ? meta_tags.map(tag => String(tag).trim().toLowerCase()) 
+          : [],
       // 🆕 Save the visibility choice to the database (falling back to "public" just in case)
       visibility: visibility || "public", 
     });

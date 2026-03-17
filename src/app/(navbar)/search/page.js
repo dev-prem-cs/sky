@@ -136,16 +136,16 @@ export default function SearchPage() {
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 <div 
-                  onClick={() => setQuery("Gaming")}
+                  onClick={() => setQuery("money heist")}
                   className="h-24 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-bold cursor-pointer hover:opacity-90 transition-opacity"
                 >
-                  #Gaming
+                  #money heist
                 </div>
                 <div 
-                  onClick={() => setQuery("Food")}
+                  onClick={() => setQuery("dog")}
                   className="h-24 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold cursor-pointer hover:opacity-90 transition-opacity"
                 >
-                  #Food
+                  #dog
                 </div>
               </div>
             </div>

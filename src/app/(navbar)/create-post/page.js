@@ -1,9 +1,13 @@
 "use client";
 
+import { generateTagsFromImage } from "@/app/actions/ai.action";
+import { Sparkles, Loader2 } from "lucide-react"; // Grab the sparkles icon!
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { upload } from "@imagekit/next";
+import { X } from "lucide-react"; 
 
 export default function CreatePost() {
   const { data: session, status } = useSession();
@@ -12,7 +16,12 @@ export default function CreatePost() {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [tags, setTags] = useState(""); 
+  const [selectedFile, setSelectedFile] = useState(null); // 🆕 ADD THIS LINE
+  // const [tags, setTags] = useState("");
+  const [tags, setTags] = useState([]); 
+  const [tagInput, setTagInput] = useState("");
+  // ai tagging
+const [isGeneratingTags, setIsGeneratingTags] = useState(false);
   const [visibility, setVisibility] = useState("public"); 
   const [imageId, setImageId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +46,7 @@ export default function CreatePost() {
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    setSelectedFile(file);
     setUploadingImage(true);
     setError("");
 
@@ -62,6 +71,27 @@ export default function CreatePost() {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+// 🎯 3. Handle key presses to create tags
+  const handleKeyDown = (e) => {
+    // Listen for Enter or Comma
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault(); // Stop the form from submitting!
+      
+      const newTag = tagInput.trim().toLowerCase();
+      
+      // Make sure it's not empty and not already in the array
+      if (newTag && !tags.includes(newTag)) {
+        setTags([...tags, newTag]);
+      }
+      setTagInput(""); // Clear the input field
+    }
+  };
+
+  // 🎯 4. Handle clicking the "X" to remove a tag
+  const removeTag = (tagToRemove) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleSubmit = async (e) => {
@@ -102,6 +132,41 @@ export default function CreatePost() {
       setLoading(false);
     } 
   };
+
+// ai tagging function 
+const handleAutoTag = async () => {
+    if (!selectedFile) {
+      return alert("Please select an image first so the AI can analyze it! 🖼️");
+    }
+
+    setIsGeneratingTags(true);
+
+    try {
+      // 1. Convert the image file to a Base64 string so we can send it to the server
+      const reader = new FileReader();
+      reader.readAsDataURL(selectedFile);
+      
+      reader.onloadend = async () => {
+        const base64String = reader.result;
+        
+        // 2. Call our Gemini Server Action
+        const result = await generateTagsFromImage(base64String);
+        
+        if (result.success) {
+          // 3. Merge the AI tags with any tags the user already typed, removing duplicates!
+          const combinedTags = [...new Set([...tags, ...result.tags])];
+          setTags(combinedTags);
+        } else {
+          alert("Could not generate tags. Please try manually.");
+        }
+        setIsGeneratingTags(false);
+      };
+    } catch (error) {
+      console.error(error);
+      setIsGeneratingTags(false);
+    }
+  };
+
 
   return (
     <div style={{ maxWidth: "600px", margin: "50px auto", padding: "20px", border: "1px solid #ddd", borderRadius: "8px", position: "relative" }}>
@@ -176,13 +241,92 @@ export default function CreatePost() {
           )}
         </div>
 
-        <input 
-          type="text" 
-          placeholder="Tags (comma separated, e.g. code, tutorial, nextjs)" 
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          style={{ padding: "10px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
+        {/* 🎯 5. The Interactive Tag Input Container */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label style={{ fontWeight: "bold", fontSize: "14px" }}>Tags 🏷️</label>
+            
+            <button
+              type="button"
+              onClick={handleAutoTag}
+              disabled={isGeneratingTags || !selectedFile} // Assuming 'file' holds your image
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 12px",
+                backgroundColor: isGeneratingTags ? "#E5E7EB" : "#F3E8FF", // Purple tint
+                color: isGeneratingTags ? "#9CA3AF" : "#9333EA",
+                border: "none",
+                borderRadius: "999px",
+                fontSize: "12px",
+                fontWeight: "bold",
+                cursor: isGeneratingTags || !selectedFile ? "not-allowed" : "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              {isGeneratingTags ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {isGeneratingTags ? "Analyzing..." : "Auto-Tag"}
+            </button>
+          </div>
+          
+          <div style={{ 
+            display: "flex", 
+            flexWrap: "wrap", 
+            gap: "8px", 
+            padding: "10px", 
+            borderRadius: "4px", 
+            border: "1px solid #ccc", 
+            backgroundColor: "#fff",
+            alignItems: "center"
+          }}>
+            
+            {/* Map out the existing tags as little pills */}
+            {tags.map((tag, index) => (
+              <span 
+                key={index} 
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  backgroundColor: "#E0E7FF", // Light Indigo
+                  color: "#4338CA", // Dark Indigo
+                  padding: "4px 10px",
+                  borderRadius: "9999px",
+                  fontSize: "13px",
+                  fontWeight: "bold"
+                }}
+              >
+                #{tag}
+                <button 
+                  type="button" 
+                  onClick={() => removeTag(tag)}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", color: "#4338CA" }}
+                >
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+
+            {/* The actual input field */}
+            <input 
+              type="text" 
+              placeholder={tags.length === 0 ? "Type a tag and press Enter or Comma..." : ""}
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{ 
+                border: "none", 
+                outline: "none", 
+                flex: 1, 
+                minWidth: "120px",
+                fontSize: "14px",
+                backgroundColor: "transparent"
+              }}
+            />
+          </div>
+          <p style={{ fontSize: "12px", color: "#666", margin: "0" }}>Press Enter or comma to add a tag.</p>
+        </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <label htmlFor="visibility" style={{ fontWeight: "bold", fontSize: "14px" }}>Post Visibility 👁️</label>

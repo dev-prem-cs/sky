@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@imagekit/next": "^2.1.5",
     "@imagekit/nodejs": "^7.3.0",
     "bcryptjs": "^3.0.3",
